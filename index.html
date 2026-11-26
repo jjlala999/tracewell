@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tracewell – Crypto transaction tracing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f5f7;--panel:#fff;--ink:#13212b;--muted:#56677400;--muted:#566774;--line:#cdd8df;--teal:#0f7c80;--flag:#d2432d;--amber:#b87a06;--violet:#5646c0;--slate:#6b7e8c;--grid:#dde5ea;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d161c;--panel:#14212a;--ink:#e5edf1;--muted:#95a7b3;--line:#27394544;--line:#273945;--teal:#3cc4c8;--flag:#ff7a63;--amber:#e8b13d;--violet:#a093ff;--slate:#8aa0ae;--grid:#1b2a33}}
+:root[data-theme="dark"]{--bg:#0d161c;--panel:#14212a;--ink:#e5edf1;--muted:#95a7b3;--line:#273945;--teal:#3cc4c8;--flag:#ff7a63;--amber:#e8b13d;--violet:#a093ff;--slate:#8aa0ae;--grid:#1b2a33}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+a{color:inherit}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+.logo{font-weight:700;font-size:20px;letter-spacing:-.02em;text-decoration:none}
+.logo i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--teal);margin-right:8px;box-shadow:14px 0 0 -2px var(--flag)}
+.logo span{margin-left:12px}
+nav div a{margin-left:22px;text-decoration:none;color:var(--muted);font-size:15px}
+nav div a:hover{color:var(--ink)}
+h1{font-size:clamp(34px,6vw,60px);line-height:1.04;letter-spacing:-.035em;margin:34px 0 14px;max-width:16ch}
+.lede{color:var(--muted);max-width:56ch;font-size:18px;margin:0 0 26px}
+.search{display:flex;gap:8px;flex-wrap:wrap}
+.search select{padding:14px 12px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.search input{flex:1 1 320px;padding:14px 16px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+button,.btn{font:inherit;font-weight:600;padding:13px 20px;border-radius:8px;border:0;background:var(--ink);color:var(--bg);cursor:pointer;text-decoration:none;display:inline-block}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;font-size:14px;color:var(--muted);align-items:center}
+.chips button{background:transparent;color:var(--ink);border:1px solid var(--line);padding:6px 12px;font-weight:500;font-size:14px}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.stage{margin:30px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap}
+.bar strong{font-size:15px}
+.seg button{background:transparent;color:var(--muted);border:1px solid var(--line);padding:6px 14px;font-size:14px;font-weight:500;border-radius:0}
+.seg button:first-child{border-radius:7px 0 0 7px}.seg button:last-child{border-radius:0 7px 7px 0;border-left:0}
+.seg button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.canvas{overflow-x:auto}
+svg{display:block;min-width:760px;width:100%;height:auto}
+.lbl{fill:var(--ink);font-size:12px;font-weight:600}.sub{fill:var(--muted);font-size:10.5px}
+.edge{fill:none;stroke:var(--slate);opacity:.7}.edge.hot{stroke:var(--flag);opacity:.85}
+.node{cursor:pointer}.node:focus-visible circle{stroke:var(--ink);stroke-width:3}
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.detail{padding:14px 16px;border-top:1px solid var(--line);font-size:14px;min-height:54px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+.tw{overflow-x:auto;border-top:1px solid var(--line)}
+th,td{text-align:left;padding:10px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:500}
+td.f{color:var(--flag);font-weight:600}
+section{padding:64px 0 0}
+h2{font-size:clamp(26px,4vw,36px);letter-spacing:-.025em;line-height:1.1;margin:0 0 22px;max-width:20ch}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:26px 44px}
+.feat{border-left:3px solid var(--teal);padding-left:16px}
+.feat:nth-child(even){border-color:var(--flag)}
+.feat h3{margin:0 0 4px;font-size:18px}.feat p{margin:0;color:var(--muted)}
+ol.steps{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;counter-reset:s}
+ol.steps li{counter-increment:s;border-top:2px solid var(--ink);padding-top:12px}
+ol.steps li:before{content:counter(s);display:block;font-weight:700;color:var(--teal);margin-bottom:2px}
+ol.steps b{display:block}ol.steps span{color:var(--muted);font-size:15px}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.plan{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px}
+.plan.best{border:2px solid var(--teal)}
+.plan h3{margin:0}.price{font-size:32px;font-weight:700;letter-spacing:-.03em;margin:6px 0 10px}.price small{font-size:14px;font-weight:400;color:var(--muted)}
+.plan ul{margin:0;padding-left:18px;color:var(--muted);font-size:15px}
+.contact{background:var(--ink);color:var(--bg);border-radius:14px;padding:34px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.contact h2{margin:0 0 6px;color:var(--bg)}.contact p{margin:0;opacity:.75;max-width:48ch}
+.contact .btn{background:var(--teal);color:#fff}
+footer{padding:40px 0 48px;color:var(--muted);font-size:13px;max-width:80ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav><a class="logo" href="#top"><i></i><span>Tracewell</span></a><div><a href="#features">Features</a><a href="#pricing">Free to use</a><a href="#contact">Contact</a></div></nav>
+<header id="top">
+<h1>Follow the money, hop by hop.</h1>
+<p class="lede">Paste a wallet address or transaction hash. Tracewell maps every transfer from the sender to the final destination, so investigators, compliance teams and victims can see where funds went. Free to use, with no account needed.</p>
+<form class="search" id="f"><input id="q" aria-label="Wallet address or transaction hash" placeholder="Wallet address or transaction hash" autocomplete="off"><select id="chain" aria-label="Chain for 0x addresses" title="Chain for 0x addresses"><option value="eth">Ethereum</option><option value="base">Base</option><option value="optimism">Optimism</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option></select><button type="submit">Trace funds</button></form>
+<div class="chips">Try a sample: <button type="button" data-s="0">Ethereum theft</button><button type="button" data-s="1">Bitcoin ransom payment</button></div>
+<p class="note" id="msg">The two samples are illustrative. Bitcoin and EVM-chain (Ethereum, Base, Optimism, Polygon, Arbitrum) addresses and transaction IDs are traced live from free public APIs (mempool.space and Blockscout) when this page is hosted outside the claude.ai preview.</p>
+<div class="stage">
+<div class="bar"><strong id="ttl"></strong><div class="seg"><button class="on" data-v="flow">Flow diagram</button><button data-v="map">Map</button></div></div>
+<div class="canvas"><svg id="svg" viewBox="0 0 900 400" role="img" aria-label="Transaction trace graph"></svg></div>
+<div class="legend"><span><b style="background:var(--teal)"></b>Origin</span><span><b style="background:var(--slate)"></b>Intermediary wallet</span><span><b style="background:var(--flag)"></b>Mixer / flagged</span><span><b style="background:var(--amber)"></b>Exchange</span><span><b style="background:var(--violet)"></b>Final destination</span></div>
+<div class="detail" id="det">Select a node to see its details.</div>
+<div class="tw"><table><thead><tr><th>Hop</th><th>From</th><th>To</th><th>Amount</th><th>Time (UTC)</th></tr></thead><tbody id="tb"></tbody></table></div>
+</div>
+</header>
+
+<section id="features"><h2>Built for people who need answers fast</h2>
+<div class="cols">
+<div class="feat"><h3>Full path, not just the last hop</h3><p>Follow funds through chains of wallets, splits and merges until they reach a destination you can act on.</p></div>
+<div class="feat"><h3>Risk flags on every node</h3><p>Mixers, sanctioned addresses and known exchange deposit wallets are labelled automatically.</p></div>
+<div class="feat"><h3>Diagram and map views</h3><p>Switch between a flow chart of the transfers and a map of where each wallet’s activity is estimated to be.</p></div>
+<div class="feat"><h3>Reports you can hand over</h3><p>Export a case file with the diagram, hop table and timestamps for exchanges, lawyers or law enforcement.</p></div>
+</div></section>
+
+<section><h2>How a trace works</h2>
+<ol class="steps">
+<li><b>Enter a starting point</b><span>Any address or transaction hash on a supported chain.</span></li>
+<li><b>We follow the funds</b><span>Each outgoing transfer is tracked, including splits across several wallets.</span></li>
+<li><b>Review the diagram</b><span>See amounts, times and flags on every connection.</span></li>
+<li><b>Export and act</b><span>Download the report or send it to your team.</span></li>
+</ol></section>
+
+<section id="pricing"><h2>Free for everyone</h2>
+<div class="plans" style="max-width:420px">
+<div class="plan best"><h3>Free</h3><div class="price">$0<small> / forever</small></div><ul><li>Unlimited traces</li><li>Unlimited depth</li><li>Diagram and map views</li><li>Case report export</li><li>No account or card needed</li></ul></div>
+</div></section>
+
+<section id="contact"><div class="contact"><div><h2>Need to trace funds now?</h2><p>Tracing is free. If you need help with a case, tell us about it and we’ll reply within one business day.</p></div><a class="btn" href="mailto:hello@tracewell.example">Contact our team</a></div></section>
+<footer>Tracewell shows blockchain data for investigation and compliance purposes. Locations on the map are estimates and do not identify a person. This page uses sample data for demonstration.</footer>
+</div>
+<script>
+var T=[{t:"Ethereum theft – 20 ETH traced",ch:"ETH",hash:"0x7a3f91ce",
+n:[["a","Victim wallet","0x7a3F…91cE","origin",0,1,43.7,-79.4,"Toronto, CA"],["b","Wallet","0x4bE1…c20a","wallet",1,0,50.1,8.7,"Frankfurt, DE"],["c","Wallet","0x91d0…7f3b","wallet",1,2,1.35,103.8,"Singapore"],["m","Mixer","Mixing contract","mixer",2,1,59.4,24.7,"Tallinn, EE"],["x","Exchange A","Deposit wallet","exchange",3,0,22.3,114.2,"Hong Kong"],["z","Unhosted wallet","0xC3e9…55aD","final",3,2,25.2,55.3,"Dubai, AE"]],
+e:[["a","b",12.4,"2026-09-02 08:14"],["a","c",7.6,"2026-09-02 08:16"],["b","m",12.38,"2026-09-02 13:40"],["c","m",7.58,"2026-09-03 01:05"],["m","x",11.9,"2026-09-04 17:22"],["m","z",7.9,"2026-09-05 02:48"]]},
+{t:"Bitcoin ransom payment – 3.2 BTC traced",ch:"BTC",hash:"bc1q8k2m4v",
+n:[["a","Company wallet","bc1q8k…2m4v","origin",0,1,40.7,-74,"New York, US"],["b","Wallet","bc1qx9…t7ha","wallet",1,1,55.7,37.6,"Moscow, RU"],["c","Wallet","bc1qd2…p0we","wallet",2,0,47.4,8.5,"Zurich, CH"],["m","Mixer","CoinJoin round","mixer",2,2,52.5,13.4,"Berlin, DE"],["z","Unhosted wallet","bc1qf5…9ncz","final",3,1,6.5,3.4,"Lagos, NG"]],
+e:[["a","b",3.2,"2026-10-11 19:03"],["b","c",1.1,"2026-10-12 06:30"],["b","m",2.08,"2026-10-12 06:31"],["c","z",1.09,"2026-10-14 11:12"],["m","z",2.05,"2026-10-15 09:47"]]}];
+var cur=0,view="flow",W=900,H=400,$=function(i){return document.getElementById(i)};
+var col={origin:"var(--teal)",wallet:"var(--slate)",mixer:"var(--flag)",exchange:"var(--amber)",final:"var(--violet)"};
+function pos(n){if(view=="map"){return[(n[7]+180)/360*(W-80)+40,Math.min(H-50,Math.max(40,(75-n[6])/95*(H-80)+40))]}
+return[90+n[4]*(W-180)/3,70+n[5]*((H-140)/2)]}
+function render(){var d=T[cur],P={},o="";d.n.forEach(function(n){P[n[0]]=pos(n)});
+o+='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--slate)"/></marker></defs>';
+if(view=="map"){for(var x=40;x<=W-40;x+=(W-80)/12)o+='<line x1="'+x+'" x2="'+x+'" y1="30" y2="'+(H-20)+'" stroke="var(--grid)"/>';for(var y=40;y<=H-40;y+=(H-80)/6)o+='<line y1="'+y+'" y2="'+y+'" x1="40" x2="'+(W-40)+'" stroke="var(--grid)"/>';o+='<text class="sub" x="40" y="22">Estimated wallet locations (latitude/longitude grid)</text>'}
+d.e.forEach(function(e,i){var a=P[e[0]],b=P[e[1]],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2-(view=="map"?30:0),to=d.n.filter(function(n){return n[0]==e[1]})[0],hot=to[3]=="mixer"||d.n.filter(function(n){return n[0]==e[0]})[0][3]=="mixer";
+o+='<path class="edge'+(hot?' hot':'')+'" d="M'+a[0]+' '+a[1]+'Q'+mx+' '+my+' '+b[0]+' '+b[1]+'" stroke-width="'+Math.min(7,1.5+e[2]/3)+'" marker-end="url(#ar)"/>';
+o+='<text class="sub" text-anchor="middle" x="'+mx+'" y="'+(my-(view=="map"?-4:6))+'">'+e[2]+' '+(e[4]||d.ch)+'</text>'});
+d.n.forEach(function(n,i){var p=P[n[0]];o+='<g class="node" tabindex="0" data-i="'+i+'" role="button" aria-label="'+n[1]+'"><circle cx="'+p[0]+'" cy="'+p[1]+'" r="15" fill="'+col[n[3]]+'" stroke="var(--panel)" stroke-width="3"/><text class="lbl" text-anchor="middle" x="'+p[0]+'" y="'+(p[1]+32)+'">'+n[1]+'</text><text class="sub" text-anchor="middle" x="'+p[0]+'" y="'+(p[1]+45)+'">'+(view=="map"?n[8]:n[2])+'</text></g>'});
+$("svg").innerHTML=o;$("ttl").textContent=d.t;
+var nm={};d.n.forEach(function(n){nm[n[0]]=n[1]+" "+n[2]});
+$("tb").innerHTML=d.e.map(function(e,i){var f=d.n.filter(function(n){return n[0]==e[1]})[0][3]=="mixer";return'<tr><td>'+(i+1)+'</td><td>'+nm[e[0]]+'</td><td'+(f?' class="f"':'')+'>'+nm[e[1]]+'</td><td>'+e[2]+' '+(e[4]||d.ch)+'</td><td>'+e[3]+'</td></tr>'}).join("")}
+function show(i){var n=T[cur].n[i],t={origin:"Origin of the traced funds",wallet:"Intermediary wallet that passed funds on",mixer:"Flagged: funds were mixed here, which hides the link between sender and receiver",exchange:"Known exchange deposit wallet: a request to this exchange may identify the account holder",final:"Final destination: unhosted wallet where the traced funds currently sit"};
+$("det").innerHTML="<strong>"+n[1]+"</strong> "+n[2]+" · "+n[8]+"<br>"+t[n[3]]+(n[9]?"<br><code style='word-break:break-all'>"+n[9]+"</code>":"")}
+$("svg").addEventListener("click",function(ev){var g=ev.target.closest(".node");if(g)show(+g.dataset.i)});
+$("svg").addEventListener("keydown",function(ev){if(ev.key=="Enter"){var g=ev.target.closest(".node");if(g)show(+g.dataset.i)}});
+document.querySelectorAll(".chips button").forEach(function(b){b.onclick=function(){cur=+b.dataset.s;$("q").value=T[cur].hash+"…";$("msg").textContent="Showing sample trace.";$("det").textContent="Select a node to see its details.";render()}});
+document.querySelectorAll(".seg button").forEach(function(b){b.onclick=function(){view=b.dataset.v;if(view=="map"&&T[cur].live){view="flow";$("det").textContent="Wallet locations aren’t recorded on the blockchain, so the map is only available for the sample traces.";return}document.querySelectorAll(".seg button").forEach(function(x){x.classList.toggle("on",x==b)});render()}});
+$("f").onsubmit=function(e){e.preventDefault();var v=$("q").value.trim().toLowerCase();if(isBtc($("q").value.trim())){runLive($("q").value.trim());return}var k=T.findIndex(function(t){return v&&v.indexOf(t.hash)==0});
+if(k<0){$("msg").textContent="Enter a Bitcoin or EVM (0x) address or transaction ID, or pick one of the two samples above."}else{cur=k;$("msg").textContent="Showing sample trace.";render()}};
+function isBtc(v){return /^(bc1[a-z0-9]{20,70}|[13][a-km-zA-HJ-NP-Z1-9]{25,40}|[0-9a-fA-F]{64}|0x[0-9a-fA-F]{40}|0x[0-9a-fA-F]{64})$/.test(v)}
+async function j(p){var r=await fetch("https://mempool.space/api"+p);if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
+function ts(tx){return tx.status&&tx.status.block_time?new Date(tx.status.block_time*1000).toISOString().slice(0,16).replace("T"," "):"unconfirmed"}
+async function live(v){var N={},E=[],seen={},order=[],cur,d0;
+function add(a,d){if(!N[a]&&order.length<16){N[a]={d:d};order.push(a)}return N[a]}
+function proc(a,tx,d){var nx=[];if(seen[tx.txid])return nx;seen[tx.txid]=1;tx.vout.forEach(function(o){var b=o.scriptpubkey_address;if(!b||b==a||!add(b,d+1))return;E.push([a,b,+(o.value/1e8).toFixed(6),ts(tx)]);nx.push(b)});return nx}
+if(/^[0-9a-f]{64}$/i.test(v)){var tx=await j("/tx/"+v),a=tx.vin[0]&&tx.vin[0].prevout&&tx.vin[0].prevout.scriptpubkey_address;if(!a)throw new Error("no sender");add(a,0);cur=proc(a,tx,0);d0=1}else{add(v,0);cur=[v];d0=0}
+for(var d=d0;d<3;d++){var nx=[];for(var i=0;i<Math.min(cur.length,4);i++){var a2=cur[i],txs=await j("/address/"+a2+"/txs");txs.filter(function(t){return t.vin.some(function(x){return x.prevout&&x.prevout.scriptpubkey_address==a2})}).slice(0,3).forEach(function(t){nx=nx.concat(proc(a2,t,d))})}cur=nx.filter(function(x,k,s){return s.indexOf(x)==k})}
+if(!E.length)throw new Error("none");
+var byL={};order.forEach(function(a){(byL[N[a].d]=byL[N[a].d]||[]).push(a)});
+var nodes=order.map(function(a){var L=byL[N[a].d],i=L.indexOf(a),r=L.length==1?1:i*2/(L.length-1),out=E.some(function(e){return e[0]==a}),ty=N[a].d==0?"origin":out?"wallet":"final";return[a,ty=="origin"?"Origin":ty=="wallet"?"Wallet":"Last hop",a.slice(0,6)+"…"+a.slice(-4),ty,N[a].d,r,0,0,"Location not on-chain",a]});
+return{t:"Live Bitcoin trace · "+v.slice(0,8)+"…",ch:"BTC",hash:v,live:1,n:nodes,e:E}}
+async function je(p){var r=await fetch("https://"+(window.CH||"eth")+".blockscout.com/api/v2"+p);if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
+async function liveEth(v){var N={},E=[],seen={},order=[],cur,d0,f;
+function procT(f,t,d){var nx=[],k=t.to&&t.to.hash&&t.to.hash.toLowerCase(),tk=t.token||{},tot=t.total||{},dec=+(tot.decimals||tk.decimals||18),sk=t.transaction_hash+k+(tk.address_hash||"");if(!k||k==f||!+tot.value||seen[sk]||!add(t.to.hash,d+1,t.to))return nx;seen[sk]=1;E.push([f,k,+(tot.value/Math.pow(10,dec)).toFixed(2),(t.timestamp||"").slice(0,16).replace("T"," "),tk.symbol||"token"]);nx.push(k);return nx}
+function add(a,d,m){var k=a.toLowerCase();if(!N[k]&&order.length<16){N[k]={d:d,a:a,m:m||{}};order.push(k)}return N[k]}
+function proc(f,tx,d){var nx=[];if(seen[tx.hash]||tx.status==="error"||!tx.to||!tx.to.hash||!+tx.value)return nx;var k=tx.to.hash.toLowerCase();if(k==f||!add(tx.to.hash,d+1,tx.to))return nx;seen[tx.hash]=1;E.push([f,k,+(tx.value/1e18).toFixed(4),(tx.timestamp||"").slice(0,16).replace("T"," ")]);nx.push(k);return nx}
+if(/^0x[0-9a-f]{64}$/i.test(v)){var tx=await je("/transactions/"+v);if(!tx.from)throw new Error("none");f=tx.from.hash.toLowerCase();add(tx.from.hash,0,tx.from);cur=proc(f,tx,0);try{var tt=await je("/transactions/"+v+"/token-transfers?type=ERC-20");(tt.items||[]).forEach(function(t){if(t.from){add(t.from.hash,0,t.from);cur=cur.concat(procT(t.from.hash.toLowerCase(),t,0))}})}catch(e){}d0=1}else{f=v.toLowerCase();add(v,0);cur=[f];d0=0}
+for(var d=d0;d<3;d++){var nx=[];for(var i=0;i<Math.min(cur.length,4);i++){var a2=cur[i],r=await je("/addresses/"+a2+"/transactions");(r.items||[]).filter(function(t){return t.from&&t.from.hash.toLowerCase()==a2}).slice(0,3).forEach(function(t){nx=nx.concat(proc(a2,t,d))});try{var q=await je("/addresses/"+a2+"/token-transfers?type=ERC-20");(q.items||[]).filter(function(t){return t.from&&t.from.hash.toLowerCase()==a2}).slice(0,3).forEach(function(t){nx=nx.concat(procT(a2,t,d))})}catch(e){}}cur=nx.filter(function(x,k,s){return s.indexOf(x)==k})}
+if(!E.length)throw new Error("none");
+var byL={};order.forEach(function(k){(byL[N[k].d]=byL[N[k].d]||[]).push(k)});
+var nodes=order.map(function(k){var L=byL[N[k].d],i=L.indexOf(k),r=L.length==1?1:i*2/(L.length-1),m=N[k].m,nm=(m.name||"").slice(0,18),out=E.some(function(e){return e[0]==k}),ty=N[k].d==0?"origin":/tornado|mixer/i.test(nm)?"mixer":/binance|coinbase|kraken|okx|bybit|kucoin|bitfinex|huobi|gemini|exchange/i.test(nm)?"exchange":out?"wallet":"final";return[k,nm||(ty=="origin"?"Origin":m.is_contract?"Contract":ty=="wallet"?"Wallet":"Last hop"),N[k].a.slice(0,6)+"…"+N[k].a.slice(-4),ty,N[k].d,r,0,0,"Location not on-chain",N[k].a]});
+return{t:"Live "+$("chain").selectedOptions[0].text+" trace · "+v.slice(0,8)+"…",ch:window.CH=="polygon"?"POL":"ETH",hash:v,live:1,n:nodes,e:E}}
+async function runLive(v){window.CH=$("chain").value;$("msg").textContent="Tracing on the blockchain…";try{var t=await(/^0x/i.test(v)?liveEth(v):live(v));T[2]=t;cur=2;view="flow";document.querySelectorAll(".seg button").forEach(function(x){x.classList.toggle("on",x.dataset.v=="flow")});$("det").textContent="Select a node to see its details.";render();$("msg").textContent="Live trace from free public blockchain data (mempool.space for Bitcoin, Blockscout for Ethereum, Base, Optimism, Polygon, Arbitrum and ERC-20 tokens). It follows the first outgoing payments for up to 3 hops, so it is not a complete trace of all funds."}catch(err){$("msg").textContent="Couldn’t reach the live blockchain data (or no outgoing payments were found). The claude.ai preview blocks outside requests, so live tracing works once the page is hosted on your own site. The samples still work."}}
+render();
+</script>
+</body>
+</html>
