@@ -71,6 +71,7 @@ ol.steps b{display:block}ol.steps span{color:var(--muted);font-size:15px}
 .contact .btn{background:var(--teal);color:#fff}
 footer{padding:40px 0 48px;color:var(--muted);font-size:13px;max-width:80ch}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -83,12 +84,22 @@ footer{padding:40px 0 48px;color:var(--muted);font-size:13px;max-width:80ch}
 <p class="note" id="msg">The two samples are illustrative. Bitcoin and EVM-chain (Ethereum, Base, Optimism, Polygon, Arbitrum) addresses and transaction IDs are traced live from free public APIs (mempool.space and Blockscout) when this page is hosted outside the claude.ai preview.</p>
 <div class="stage">
 <div class="bar"><strong id="ttl"></strong><div class="seg"><button class="on" data-v="flow">Flow diagram</button><button data-v="map">Map</button></div></div>
-<div class="canvas"><svg id="svg" viewBox="0 0 900 400" role="img" aria-label="Transaction trace graph"></svg></div>
+<div class="canvas"><svg id="svg" viewBox="0 0 900 480" role="img" aria-label="Transaction trace graph"></svg></div>
 <div class="legend"><span><b style="background:var(--teal)"></b>Origin</span><span><b style="background:var(--slate)"></b>Intermediary wallet</span><span><b style="background:var(--flag)"></b>Mixer / flagged</span><span><b style="background:var(--amber)"></b>Exchange</span><span><b style="background:var(--violet)"></b>Final destination</span></div>
 <div class="detail" id="det">Select a node to see its details.</div>
+<div class="detail" id="fin"></div>
 <div class="tw"><table><thead><tr><th>Hop</th><th>From</th><th>To</th><th>Amount</th><th>Time (UTC)</th></tr></thead><tbody id="tb"></tbody></table></div>
 </div>
 </header>
+
+<section id="help"><h2>If you’ve lost crypto: what to do now</h2><div class="cols">
+<div class="feat"><h3>Act quickly</h3><p>Exchanges and stablecoin issuers can only freeze funds while they still hold them. Report within hours if you can, not weeks.</p></div>
+<div class="feat"><h3>Keep your evidence</h3><p>Save transaction IDs, wallet addresses, chat messages, emails and screenshots. Download the case summary from a trace.</p></div>
+<div class="feat"><h3>Report it</h3><p>File a police report and a report with your national fraud or cybercrime service, such as the FBI’s IC3 in the US. Include the case summary.</p></div>
+<div class="feat"><h3>Beware recovery scams</h3><p>Anyone who contacts you offering to recover your crypto for an upfront fee is very likely a second scammer. No one can reverse a blockchain transaction.</p></div>
+<div class="feat"><h3>Read results carefully</h3><p>A mixer breaks the trail. An exchange is the best lead. An unhosted wallet means no company holds it. Labels are clues, not proof of who a person is.</p></div>
+<div class="feat"><h3>What this tool can’t see</h3><p>It follows only a few payments per wallet, doesn’t follow bridges between chains, and can’t name the owners of private wallets.</p></div>
+</div></section>
 
 <section id="features"><h2>Built for people who need answers fast</h2>
 <div class="cols">
@@ -121,22 +132,77 @@ e:[["a","b",12.4,"2026-09-02 08:14"],["a","c",7.6,"2026-09-02 08:16"],["b","m",1
 {t:"Bitcoin ransom payment – 3.2 BTC traced",ch:"BTC",hash:"bc1q8k2m4v",
 n:[["a","Company wallet","bc1q8k…2m4v","origin",0,1,40.7,-74,"New York, US"],["b","Wallet","bc1qx9…t7ha","wallet",1,1,55.7,37.6,"Moscow, RU"],["c","Wallet","bc1qd2…p0we","wallet",2,0,47.4,8.5,"Zurich, CH"],["m","Mixer","CoinJoin round","mixer",2,2,52.5,13.4,"Berlin, DE"],["z","Unhosted wallet","bc1qf5…9ncz","final",3,1,6.5,3.4,"Lagos, NG"]],
 e:[["a","b",3.2,"2026-10-11 19:03"],["b","c",1.1,"2026-10-12 06:30"],["b","m",2.08,"2026-10-12 06:31"],["c","z",1.09,"2026-10-14 11:12"],["m","z",2.05,"2026-10-15 09:47"]]}];
-var cur=0,view="flow",W=900,H=400,$=function(i){return document.getElementById(i)};
+var cur=0,view="flow",W=900,H=480,$=function(i){return document.getElementById(i)};
 var col={origin:"var(--teal)",wallet:"var(--slate)",mixer:"var(--flag)",exchange:"var(--amber)",final:"var(--violet)"};
 function pos(n){if(view=="map"){return[(n[7]+180)/360*(W-80)+40,Math.min(H-50,Math.max(40,(75-n[6])/95*(H-80)+40))]}
 return[90+n[4]*(W-180)/3,70+n[5]*((H-140)/2)]}
+function fin(d){var ends=d.n.filter(function(n){return n[3]!="origin"&&!d.e.some(function(e){return e[0]==n[0]})}),el=$("fin");if(!ends.length){el.innerHTML="";return}
+var o=info(d)+"<strong>Where the funds ended up</strong>";
+ends.forEach(function(n,i){var a=n[9]||n[2],q=encodeURIComponent(a),ex=n[3]=="exchange",
+u=d.ch=="BTC"?"https://mempool.space/address/"+q:"https://"+(window.CH||"eth")+".blockscout.com/address/"+q,
+who=ex?"Exchange: <strong>"+(n[10]||n[1])+"</strong>. Ask the police to request the account holder’s identity from this company, and contact its support team to flag the funds.":"No company identified."+(n[12]?" ENS name: <strong>"+n[12]+"</strong>.":"")+(n[11]?" Label: "+esc(n[11])+".":""),
+lk=d.live?'<a href="'+u+'" target="_blank" rel="noopener">Block explorer</a> · <a href="https://www.chainabuse.com/address/'+q+'" target="_blank" rel="noopener">Scam reports</a> · <a href="https://www.google.com/search?q=%22'+q+'%22" target="_blank" rel="noopener">Search the web</a>':"Links appear for live traces.";
+o+='<div style="margin:10px 0;padding-left:12px;border-left:3px solid '+col[n[3]]+'"><strong>'+n[1]+'</strong> <span style="word-break:break-all">'+esc(a)+'</span><br>'+who+'<br><span id="bal'+i+'" style="display:block"></span>'+lk+'</div>'});
+o+='<strong>Next steps</strong><ol style="margin:6px 0 10px;padding-left:20px"><li>Save this trace with the button below.</li><li>Report it to the police (in the US, the FBI’s IC3 at ic3.gov) and, if an exchange is named, to that exchange.</li><li>Don’t contact or confront the wallet owner. Labels are clues, not proof of identity.</li></ol><button type="button" id="dl">Download case summary</button> <button type="button" id="pd" style="margin-left:8px">Download PDF report</button>';
+el.innerHTML=o;if(d.live)ends.forEach(function(n,i){bal(d,n,i)});$("pd").onclick=function(){pdf(d,ends)};
+$("dl").onclick=function(){var A={};d.n.forEach(function(n){A[n[0]]=(n[10]||n[1])+" "+(n[9]||n[2])});var t=d.t+"\n\nHops:\n"+d.e.map(function(e,i){return(i+1)+". "+A[e[0]]+" -> "+A[e[1]]+": "+e[2]+" "+(e[4]||d.ch)+" ("+e[3]+" UTC)"+(e[5]?" tx "+e[5]:"")}).join("\n")+"\n\nEnded at:\n"+ends.map(function(n){return A[n[0]]}).join("\n")+"\n\nBuilt from public blockchain data. Labels are clues, not proof of identity.";var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download="trace-summary.txt";a.click()}}
+function txu(d,h){h=encodeURIComponent(h);return d.ch=="BTC"?"https://mempool.space/tx/"+h:"https://"+(window.CH||"eth")+".blockscout.com/tx/"+h}
+async function bal(d,n,i){var s=$("bal"+i),a=n[9];if(!s||!a)return;try{if(d.ch=="BTC"){var r=await j("/address/"+a),c=r.chain_stats,b=(c.funded_txo_sum-c.spent_txo_sum)/1e8;s.textContent="Current balance: "+b.toFixed(8)+" BTC"+(b>0?" (funds may still be there)":" (empty: the funds have moved on)")}else{var r2=await je("/addresses/"+a),w=+r2.coin_balance/1e18;s.textContent="Current balance: "+w.toFixed(4)+" "+d.ch+" (native coin only, tokens not counted)"+(r2.is_contract?". This address is a smart contract.":"")}}catch(e){}}
+function info(d){var org=d.n.filter(function(n){return n[3]=="origin"})[0],S={},T0=[],fl=[];
+d.e.forEach(function(e){var s=e[4]||d.ch;if(org&&e[0]==org[0])S[s]=(S[s]||0)+e[2];var t=Date.parse((e[3]||"").replace(" ","T")+"Z");if(t)T0.push(t)});
+var sent=Object.keys(S).map(function(k){return+S[k].toFixed(4)+" "+k}).join(", "),span=T0.length?Math.max.apply(0,T0)-Math.min.apply(0,T0):0,sp=span<36e5?"under an hour":span<864e5?Math.round(span/36e5)+" hours":Math.round(span/864e5)+" days";
+if(d.n.some(function(n){return n[3]=="mixer"}))fl.push("Funds passed through a mixer, which hides the link between sender and receiver. Anything traced beyond it is guesswork.");
+if(d.n.some(function(n){return n[3]=="exchange"}))fl.push("Funds reached an exchange. This is the best chance to identify someone and freeze funds, so contact them quickly.");
+if(org&&d.e.filter(function(e){return e[0]==org[0]}).length>1)fl.push("The origin split the funds across several wallets, a common way to make tracing harder.");
+if(T0.length>1&&span<864e5)fl.push("All of these hops happened within "+sp+", which can point to a fast, deliberate cash-out.");
+if(d.live)fl.push("This is a partial trace: up to 3 hops, 16 wallets and the first few payments out of each wallet.");
+return'<strong>Summary</strong><ul style="margin:6px 0 12px;padding-left:20px"><li>'+d.n.length+' wallets and '+d.e.length+' transfers traced'+(T0.length?', spanning '+sp:'')+'.</li>'+(sent?'<li>Sent from the origin: '+sent+'.</li>':'')+fl.map(function(t){return"<li>"+t+"</li>"}).join("")+'</ul>'}
+function un(s){return String(s==null?"":s).replace(/&#(\d+);/g,function(m,c){return String.fromCharCode(c)})}
+function rgb(h){return[1,3,5].map(function(i){return parseInt(h.substr(i,2),16)})}
+function pdf(d,ends){var J=window.jspdf;if(!J){alert("The PDF library didn’t load. Check your connection and try again.");return}
+var doc=new J.jsPDF({unit:"pt",format:"a4"}),M=40,Wd=515,y=50,CL={origin:"#0f7c80",wallet:"#6b7e8c",mixer:"#d2432d",exchange:"#b87a06",final:"#5646c0"},A={},TY={};
+d.n.forEach(function(n){A[n[0]]=un(n[10]||n[1])+" ("+(n[9]||n[2])+")";TY[n[0]]=n[3]});
+function need(h){if(y+h>790){doc.addPage();y=50}}
+function para(t,sz,b,gap){doc.setFont("helvetica",b?"bold":"normal");doc.setFontSize(sz);doc.setTextColor(20,33,43);doc.splitTextToSize(un(t),Wd).forEach(function(l){need(sz+4);doc.text(l,M,y);y+=sz+3});y+=gap||0}
+doc.setFillColor.apply(doc,rgb(CL.origin));doc.rect(0,0,595,10,"F");
+para("Tracewell - transaction trace report",18,1,2);para(d.t,11,0,2);
+para("Generated "+new Date().toISOString().slice(0,10)+" from public blockchain data"+(d.live?"":". SAMPLE DATA, not a real case."),8.5,0,12);
+para("Summary",12,1,2);para(info(d).replace(/<\/strong>/g,"\n").replace(/<\/li>/g,"\n").replace(/<li>/g,"- ").replace(/<[^>]+>/g,"").replace(/^Summary\n/,""),9,0,10);
+para("Flow of funds",12,1,4);need(290);
+var v0=view,sc=Wd/W,P={};view="flow";d.n.forEach(function(n){var p=pos(n);P[n[0]]=[M+p[0]*sc,y+(p[1]-30)*sc]});view=v0;
+d.e.forEach(function(e){var a=P[e[0]],b=P[e[1]],hot=TY[e[0]]=="mixer"||TY[e[1]]=="mixer",c=rgb(hot?CL.mixer:CL.wallet),g=Math.atan2(b[1]-a[1],b[0]-a[0]),tx=b[0]-7*Math.cos(g),ty=b[1]-7*Math.sin(g);
+doc.setDrawColor.apply(doc,c);doc.setFillColor.apply(doc,c);doc.setLineWidth(Math.min(3,.6+e[2]/8));doc.line(a[0],a[1],tx,ty);
+doc.triangle(tx,ty,tx-6*Math.cos(g-.4),ty-6*Math.sin(g-.4),tx-6*Math.cos(g+.4),ty-6*Math.sin(g+.4),"F");
+doc.setFontSize(6.5);doc.setFont("helvetica","normal");doc.setTextColor(86,103,116);doc.text(e[2]+" "+(e[4]||d.ch),(a[0]+b[0])/2,(a[1]+b[1])/2-3,{align:"center"})});
+d.n.forEach(function(n){var p=P[n[0]];doc.setFillColor.apply(doc,rgb(CL[n[3]]));doc.circle(p[0],p[1],5,"F");doc.setTextColor(20,33,43);doc.setFont("helvetica","bold");doc.setFontSize(7);doc.text(un(n[1]),p[0],p[1]+14,{align:"center"});doc.setFont("helvetica","normal");doc.setFontSize(5.5);split(String(n[2])).forEach(function(l,i){doc.text(l,p[0],p[1]+21+i*6.5,{align:"center"})})});
+y+=290;
+para("Transfers, hop by hop",12,1,4);
+d.e.forEach(function(e,i){para((i+1)+". "+A[e[0]]+"\n    to "+A[e[1]]+"\n    "+e[2]+" "+(e[4]||d.ch)+" | "+e[3]+" UTC"+(e[5]?" | tx "+e[5]:""),8,0,5)});
+y+=6;para("Where the funds ended up",12,1,4);
+ends.forEach(function(n,i){var a=n[9]||n[2],ex=n[3]=="exchange",bs=$("bal"+i),u=d.ch=="BTC"?"https://mempool.space/address/"+a:"https://"+(window.CH||"eth")+".blockscout.com/address/"+a;
+para(un(n[1])+" - "+a,9,1,1);
+para(ex?"Exchange: "+un(n[10]||n[1])+". Ask the police to request the account holder's identity from this company, and contact its support team to flag the funds.":"No company identified."+(n[12]?" ENS name: "+n[12]+".":"")+(n[11]?" Label: "+n[11]+".":""),8.5,0,1);
+if(bs&&bs.textContent)para(bs.textContent,8.5,0,1);if(d.live)para("Explorer: "+u,8,0,1);y+=6});
+para("Next steps",12,1,3);
+para("1. Keep this report, the transaction IDs and any messages or screenshots.\n2. Report to the police and your national fraud or cybercrime service (in the US, the FBI's IC3 at ic3.gov). Include this report.\n3. If an exchange is named, contact it quickly. Exchanges and stablecoin issuers can only freeze funds they still hold.\n4. Do not contact or confront a wallet owner. Do not pay anyone who offers to recover your crypto for an upfront fee.",9,0,10);
+para("Limits of this report",12,1,3);
+para("This report follows only the first few payments out of each wallet, up to 3 hops and 16 wallets, and does not follow bridges between chains. Wallet names and labels come from public data and are clues, not proof of who controls a wallet. Wallet locations are not recorded on the blockchain. This is not legal advice.",9,0,0);
+var N=doc.getNumberOfPages();for(var k=1;k<=N;k++){doc.setPage(k);doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(110,110,110);doc.text("Tracewell report - page "+k+" of "+N,M,820)}
+doc.save("tracewell-report.pdf")}
+function split(s){var h=Math.ceil(s.length/2);return s.length>26?[s.slice(0,h),s.slice(h)]:[s]}
+function sub(p,L){return L.map(function(t,i){return'<text class="sub" text-anchor="middle" x="'+p[0]+'" y="'+(p[1]+45+i*12)+'">'+t+'</text>'}).join("")}
 function render(){var d=T[cur],P={},o="";d.n.forEach(function(n){P[n[0]]=pos(n)});
 o+='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--slate)"/></marker></defs>';
 if(view=="map"){for(var x=40;x<=W-40;x+=(W-80)/12)o+='<line x1="'+x+'" x2="'+x+'" y1="30" y2="'+(H-20)+'" stroke="var(--grid)"/>';for(var y=40;y<=H-40;y+=(H-80)/6)o+='<line y1="'+y+'" y2="'+y+'" x1="40" x2="'+(W-40)+'" stroke="var(--grid)"/>';o+='<text class="sub" x="40" y="22">Estimated wallet locations (latitude/longitude grid)</text>'}
 d.e.forEach(function(e,i){var a=P[e[0]],b=P[e[1]],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2-(view=="map"?30:0),to=d.n.filter(function(n){return n[0]==e[1]})[0],hot=to[3]=="mixer"||d.n.filter(function(n){return n[0]==e[0]})[0][3]=="mixer";
 o+='<path class="edge'+(hot?' hot':'')+'" d="M'+a[0]+' '+a[1]+'Q'+mx+' '+my+' '+b[0]+' '+b[1]+'" stroke-width="'+Math.min(7,1.5+e[2]/3)+'" marker-end="url(#ar)"/>';
 o+='<text class="sub" text-anchor="middle" x="'+mx+'" y="'+(my-(view=="map"?-4:6))+'">'+e[2]+' '+(e[4]||d.ch)+'</text>'});
-d.n.forEach(function(n,i){var p=P[n[0]];o+='<g class="node" tabindex="0" data-i="'+i+'" role="button" aria-label="'+n[1]+'"><circle cx="'+p[0]+'" cy="'+p[1]+'" r="15" fill="'+col[n[3]]+'" stroke="var(--panel)" stroke-width="3"/><text class="lbl" text-anchor="middle" x="'+p[0]+'" y="'+(p[1]+32)+'">'+n[1]+'</text><text class="sub" text-anchor="middle" x="'+p[0]+'" y="'+(p[1]+45)+'">'+(view=="map"?n[8]:n[2])+'</text></g>'});
-$("svg").innerHTML=o;$("ttl").textContent=d.t;
+d.n.forEach(function(n,i){var p=P[n[0]];o+='<g class="node" tabindex="0" data-i="'+i+'" role="button" aria-label="'+n[1]+'"><circle cx="'+p[0]+'" cy="'+p[1]+'" r="15" fill="'+col[n[3]]+'" stroke="var(--panel)" stroke-width="3"/><text class="lbl" text-anchor="middle" x="'+p[0]+'" y="'+(p[1]+32)+'">'+n[1]+'</text>'+sub(p,view=="map"?[n[8]].concat(split(n[2])):split(n[2]))+'</g>'});
+$("svg").innerHTML=o;$("ttl").textContent=d.t;fin(d);
 var nm={};d.n.forEach(function(n){nm[n[0]]=n[1]+" "+n[2]});
-$("tb").innerHTML=d.e.map(function(e,i){var f=d.n.filter(function(n){return n[0]==e[1]})[0][3]=="mixer";return'<tr><td>'+(i+1)+'</td><td>'+nm[e[0]]+'</td><td'+(f?' class="f"':'')+'>'+nm[e[1]]+'</td><td>'+e[2]+' '+(e[4]||d.ch)+'</td><td>'+e[3]+'</td></tr>'}).join("")}
+$("tb").innerHTML=d.e.map(function(e,i){var f=d.n.filter(function(n){return n[0]==e[1]})[0][3]=="mixer";return'<tr><td>'+(i+1)+'</td><td>'+nm[e[0]]+'</td><td'+(f?' class="f"':'')+'>'+nm[e[1]]+'</td><td>'+e[2]+' '+(e[4]||d.ch)+'</td><td>'+(e[5]?'<a href="'+txu(d,e[5])+'" target="_blank" rel="noopener">'+e[3]+'</a>':e[3])+'</td></tr>'}).join("")}
 function show(i){var n=T[cur].n[i],t={origin:"Origin of the traced funds",wallet:"Intermediary wallet that passed funds on",mixer:"Flagged: funds were mixed here, which hides the link between sender and receiver",exchange:"Known exchange deposit wallet: a request to this exchange may identify the account holder",final:"Final destination: unhosted wallet where the traced funds currently sit"};
-$("det").innerHTML="<strong>"+n[1]+"</strong> "+n[2]+" · "+n[8]+"<br>"+t[n[3]]+(n[9]?"<br><code style='word-break:break-all'>"+n[9]+"</code>":"")}
+$("det").innerHTML="<strong>"+n[1]+"</strong> "+n[2]+" · "+n[8]+"<br>"+t[n[3]]+(n[10]?"<br>Exchange company: <strong>"+n[10]+"</strong>"+(n[11]?" (label: "+esc(n[11])+")":""):"")}
 $("svg").addEventListener("click",function(ev){var g=ev.target.closest(".node");if(g)show(+g.dataset.i)});
 $("svg").addEventListener("keydown",function(ev){if(ev.key=="Enter"){var g=ev.target.closest(".node");if(g)show(+g.dataset.i)}});
 document.querySelectorAll(".chips button").forEach(function(b){b.onclick=function(){cur=+b.dataset.s;$("q").value=T[cur].hash+"…";$("msg").textContent="Showing sample trace.";$("det").textContent="Select a node to see its details.";render()}});
@@ -148,23 +214,27 @@ async function j(p){var r=await fetch("https://mempool.space/api"+p);if(!r.ok)th
 function ts(tx){return tx.status&&tx.status.block_time?new Date(tx.status.block_time*1000).toISOString().slice(0,16).replace("T"," "):"unconfirmed"}
 async function live(v){var N={},E=[],seen={},order=[],cur,d0;
 function add(a,d){if(!N[a]&&order.length<16){N[a]={d:d};order.push(a)}return N[a]}
-function proc(a,tx,d){var nx=[];if(seen[tx.txid])return nx;seen[tx.txid]=1;tx.vout.forEach(function(o){var b=o.scriptpubkey_address;if(!b||b==a||!add(b,d+1))return;E.push([a,b,+(o.value/1e8).toFixed(6),ts(tx)]);nx.push(b)});return nx}
+function proc(a,tx,d){var nx=[];if(seen[tx.txid])return nx;seen[tx.txid]=1;tx.vout.forEach(function(o){var b=o.scriptpubkey_address;if(!b||b==a||!add(b,d+1))return;E.push([a,b,+(o.value/1e8).toFixed(6),ts(tx),"",tx.txid]);nx.push(b)});return nx}
 if(/^[0-9a-f]{64}$/i.test(v)){var tx=await j("/tx/"+v),a=tx.vin[0]&&tx.vin[0].prevout&&tx.vin[0].prevout.scriptpubkey_address;if(!a)throw new Error("no sender");add(a,0);cur=proc(a,tx,0);d0=1}else{add(v,0);cur=[v];d0=0}
 for(var d=d0;d<3;d++){var nx=[];for(var i=0;i<Math.min(cur.length,4);i++){var a2=cur[i],txs=await j("/address/"+a2+"/txs");txs.filter(function(t){return t.vin.some(function(x){return x.prevout&&x.prevout.scriptpubkey_address==a2})}).slice(0,3).forEach(function(t){nx=nx.concat(proc(a2,t,d))})}cur=nx.filter(function(x,k,s){return s.indexOf(x)==k})}
 if(!E.length)throw new Error("none");
 var byL={};order.forEach(function(a){(byL[N[a].d]=byL[N[a].d]||[]).push(a)});
-var nodes=order.map(function(a){var L=byL[N[a].d],i=L.indexOf(a),r=L.length==1?1:i*2/(L.length-1),out=E.some(function(e){return e[0]==a}),ty=N[a].d==0?"origin":out?"wallet":"final";return[a,ty=="origin"?"Origin":ty=="wallet"?"Wallet":"Last hop",a.slice(0,6)+"…"+a.slice(-4),ty,N[a].d,r,0,0,"Location not on-chain",a]});
+var nodes=order.map(function(a){var L=byL[N[a].d],i=L.indexOf(a),r=L.length==1?1:i*2/(L.length-1),out=E.some(function(e){return e[0]==a}),ty=N[a].d==0?"origin":out?"wallet":"final";return[a,ty=="origin"?"Origin":ty=="wallet"?"Wallet":"Last hop",a,ty,N[a].d,r,0,0,"Location not on-chain",a]});
 return{t:"Live Bitcoin trace · "+v.slice(0,8)+"…",ch:"BTC",hash:v,live:1,n:nodes,e:E}}
+var XC=[["Binance",/binance/i],["Coinbase",/coinbase/i],["Kraken",/kraken/i],["OKX",/\bokx\b|okex/i],["Bybit",/bybit/i],["KuCoin",/kucoin/i],["Bitfinex",/bitfinex/i],["HTX (Huobi)",/huobi|\bhtx\b/i],["Gemini",/\bgemini\b/i],["Crypto.com",/crypto\.com/i],["Bitget",/bitget/i],["Gate.io",/gate\.io/i],["Bitstamp",/bitstamp/i],["MEXC",/\bmexc\b/i],["Upbit",/upbit/i],["Bithumb",/bithumb/i]];
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return"&#"+c.charCodeAt(0)+";"})}
+function tags(m){var a=[m.name,m.ens_domain_name].concat((m.public_tags||[]).map(function(t){return t.display_name||t.label||""}),((m.metadata&&m.metadata.tags)||[]).map(function(t){return t.name||""}));return a.filter(Boolean).join(" | ")}
+function company(s){for(var i=0;i<XC.length;i++)if(XC[i][1].test(s))return XC[i][0];return/exchange/i.test(s)?s.split(" | ")[0].replace(/\s*\d+$/,"").slice(0,24):""}
 async function je(p){var r=await fetch("https://"+(window.CH||"eth")+".blockscout.com/api/v2"+p);if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
 async function liveEth(v){var N={},E=[],seen={},order=[],cur,d0,f;
-function procT(f,t,d){var nx=[],k=t.to&&t.to.hash&&t.to.hash.toLowerCase(),tk=t.token||{},tot=t.total||{},dec=+(tot.decimals||tk.decimals||18),sk=t.transaction_hash+k+(tk.address_hash||"");if(!k||k==f||!+tot.value||seen[sk]||!add(t.to.hash,d+1,t.to))return nx;seen[sk]=1;E.push([f,k,+(tot.value/Math.pow(10,dec)).toFixed(2),(t.timestamp||"").slice(0,16).replace("T"," "),tk.symbol||"token"]);nx.push(k);return nx}
+function procT(f,t,d){var nx=[],k=t.to&&t.to.hash&&t.to.hash.toLowerCase(),tk=t.token||{},tot=t.total||{},dec=+(tot.decimals||tk.decimals||18),sk=t.transaction_hash+k+(tk.address_hash||"");if(!k||k==f||!+tot.value||seen[sk]||!add(t.to.hash,d+1,t.to))return nx;seen[sk]=1;E.push([f,k,+(tot.value/Math.pow(10,dec)).toFixed(2),(t.timestamp||"").slice(0,16).replace("T"," "),tk.symbol||"token",t.transaction_hash]);nx.push(k);return nx}
 function add(a,d,m){var k=a.toLowerCase();if(!N[k]&&order.length<16){N[k]={d:d,a:a,m:m||{}};order.push(k)}return N[k]}
-function proc(f,tx,d){var nx=[];if(seen[tx.hash]||tx.status==="error"||!tx.to||!tx.to.hash||!+tx.value)return nx;var k=tx.to.hash.toLowerCase();if(k==f||!add(tx.to.hash,d+1,tx.to))return nx;seen[tx.hash]=1;E.push([f,k,+(tx.value/1e18).toFixed(4),(tx.timestamp||"").slice(0,16).replace("T"," ")]);nx.push(k);return nx}
+function proc(f,tx,d){var nx=[];if(seen[tx.hash]||tx.status==="error"||!tx.to||!tx.to.hash||!+tx.value)return nx;var k=tx.to.hash.toLowerCase();if(k==f||!add(tx.to.hash,d+1,tx.to))return nx;seen[tx.hash]=1;E.push([f,k,+(tx.value/1e18).toFixed(4),(tx.timestamp||"").slice(0,16).replace("T"," "),"",tx.hash]);nx.push(k);return nx}
 if(/^0x[0-9a-f]{64}$/i.test(v)){var tx=await je("/transactions/"+v);if(!tx.from)throw new Error("none");f=tx.from.hash.toLowerCase();add(tx.from.hash,0,tx.from);cur=proc(f,tx,0);try{var tt=await je("/transactions/"+v+"/token-transfers?type=ERC-20");(tt.items||[]).forEach(function(t){if(t.from){add(t.from.hash,0,t.from);cur=cur.concat(procT(t.from.hash.toLowerCase(),t,0))}})}catch(e){}d0=1}else{f=v.toLowerCase();add(v,0);cur=[f];d0=0}
 for(var d=d0;d<3;d++){var nx=[];for(var i=0;i<Math.min(cur.length,4);i++){var a2=cur[i],r=await je("/addresses/"+a2+"/transactions");(r.items||[]).filter(function(t){return t.from&&t.from.hash.toLowerCase()==a2}).slice(0,3).forEach(function(t){nx=nx.concat(proc(a2,t,d))});try{var q=await je("/addresses/"+a2+"/token-transfers?type=ERC-20");(q.items||[]).filter(function(t){return t.from&&t.from.hash.toLowerCase()==a2}).slice(0,3).forEach(function(t){nx=nx.concat(procT(a2,t,d))})}catch(e){}}cur=nx.filter(function(x,k,s){return s.indexOf(x)==k})}
 if(!E.length)throw new Error("none");
 var byL={};order.forEach(function(k){(byL[N[k].d]=byL[N[k].d]||[]).push(k)});
-var nodes=order.map(function(k){var L=byL[N[k].d],i=L.indexOf(k),r=L.length==1?1:i*2/(L.length-1),m=N[k].m,nm=(m.name||"").slice(0,18),out=E.some(function(e){return e[0]==k}),ty=N[k].d==0?"origin":/tornado|mixer/i.test(nm)?"mixer":/binance|coinbase|kraken|okx|bybit|kucoin|bitfinex|huobi|gemini|exchange/i.test(nm)?"exchange":out?"wallet":"final";return[k,nm||(ty=="origin"?"Origin":m.is_contract?"Contract":ty=="wallet"?"Wallet":"Last hop"),N[k].a.slice(0,6)+"…"+N[k].a.slice(-4),ty,N[k].d,r,0,0,"Location not on-chain",N[k].a]});
+var nodes=order.map(function(k){var L=byL[N[k].d],i=L.indexOf(k),r=L.length==1?1:i*2/(L.length-1),m=N[k].m,tg=tags(m),nm=esc((m.name||"").slice(0,18)),co=esc(company(tg)),out=E.some(function(e){return e[0]==k}),ty=N[k].d==0?"origin":/tornado|mixer/i.test(tg)?"mixer":co?"exchange":out?"wallet":"final";return[k,co||nm||(ty=="origin"?"Origin":m.is_contract?"Contract":ty=="wallet"?"Wallet":"Last hop"),N[k].a,ty,N[k].d,r,0,0,"Location not on-chain",N[k].a,co,tg,esc(N[k].m.ens_domain_name||"")]});
 return{t:"Live "+$("chain").selectedOptions[0].text+" trace · "+v.slice(0,8)+"…",ch:window.CH=="polygon"?"POL":"ETH",hash:v,live:1,n:nodes,e:E}}
 async function runLive(v){window.CH=$("chain").value;$("msg").textContent="Tracing on the blockchain…";try{var t=await(/^0x/i.test(v)?liveEth(v):live(v));T[2]=t;cur=2;view="flow";document.querySelectorAll(".seg button").forEach(function(x){x.classList.toggle("on",x.dataset.v=="flow")});$("det").textContent="Select a node to see its details.";render();$("msg").textContent="Live trace from free public blockchain data (mempool.space for Bitcoin, Blockscout for Ethereum, Base, Optimism, Polygon, Arbitrum and ERC-20 tokens). It follows the first outgoing payments for up to 3 hops, so it is not a complete trace of all funds."}catch(err){$("msg").textContent="Couldn’t reach the live blockchain data (or no outgoing payments were found). The claude.ai preview blocks outside requests, so live tracing works once the page is hosted on your own site. The samples still work."}}
 render();
