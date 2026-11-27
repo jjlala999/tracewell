@@ -35,10 +35,10 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .stage{margin:30px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .bar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap}
 .bar strong{font-size:15px}
-.seg button{background:transparent;color:var(--muted);border:1px solid var(--line);padding:6px 14px;font-size:14px;font-weight:500;border-radius:0}
+.zm button,.seg button{background:transparent;color:var(--muted);border:1px solid var(--line);padding:6px 14px;font-size:14px;font-weight:500;border-radius:0}
 .seg button:first-child{border-radius:7px 0 0 7px}.seg button:last-child{border-radius:0 7px 7px 0;border-left:0}
 .seg button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.canvas{overflow-x:auto}
+.canvas{overflow-x:auto}.zm{display:flex}.zm button:first-child{border-radius:7px 0 0 7px}.zm button:last-child{border-radius:0 7px 7px 0}.zm button+button{border-left:0}svg{max-height:75vh;cursor:grab}
 svg{display:block;min-width:760px;width:100%;height:auto}
 .am{paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
 .lbl{fill:var(--ink);font-size:12px;font-weight:600}.sub{fill:var(--muted);font-size:10.5px}
@@ -84,9 +84,9 @@ footer{padding:40px 0 48px;color:var(--muted);font-size:13px;max-width:80ch}
 <div class="chips">Try a sample: <button type="button" data-s="0">Ethereum theft</button><button type="button" data-s="1">Bitcoin ransom payment</button></div>
 <p class="note" id="msg">The two samples are illustrative. Bitcoin and EVM-chain (Ethereum, Base, Optimism, Polygon, Arbitrum) addresses and transaction IDs are traced live from free public APIs (mempool.space and Blockscout) when this page is hosted outside the claude.ai preview.</p>
 <div class="stage">
-<div class="bar"><strong id="ttl"></strong><div class="seg"><button class="on" data-v="flow">Flow diagram</button><button data-v="map">Map</button></div></div>
+<div class="bar"><strong id="ttl"></strong><div style="display:flex;gap:10px;flex-wrap:wrap"><div class="zm"><button type="button" id="zi" aria-label="Zoom in">+</button><button type="button" id="zo" aria-label="Zoom out">−</button><button type="button" id="zf">Fit</button></div><div class="seg"><button class="on" data-v="flow">Flow diagram</button><button data-v="map">Map</button></div></div></div>
 <div class="canvas"><svg id="svg" viewBox="0 0 900 480" role="img" aria-label="Transaction trace graph"></svg></div>
-<div class="legend"><span><b style="background:var(--teal)"></b>Origin</span><span><b style="background:var(--slate)"></b>Intermediary wallet</span><span><b style="background:var(--flag)"></b>Mixer / flagged</span><span><b style="background:var(--amber)"></b>Exchange</span><span><b style="background:var(--violet)"></b>Final destination</span><span>Dashed line = bridge to another chain</span></div>
+<div class="legend"><span><b style="background:var(--teal)"></b>Origin</span><span><b style="background:var(--slate)"></b>Intermediary wallet</span><span><b style="background:var(--flag)"></b>Mixer / flagged</span><span><b style="background:var(--amber)"></b>Exchange</span><span><b style="background:var(--violet)"></b>Final destination</span><span>Dashed line = bridge to another chain</span><span>Drag to move. Zoom with + and −, or Ctrl + scroll.</span></div>
 <div class="detail" id="det">Select a node to see its details.</div>
 <div class="detail" id="fin"></div>
 <div class="tw"><table><thead><tr><th>Hop</th><th>From</th><th>To</th><th>Amount</th><th>Time (UTC)</th></tr></thead><tbody id="tb"></tbody></table></div>
@@ -170,14 +170,14 @@ doc.setFillColor.apply(doc,rgb(CL.origin));doc.rect(0,0,595,10,"F");
 para("Tracewell - transaction trace report",18,1,2);para(d.t,11,0,2);
 para("Generated "+new Date().toISOString().slice(0,10)+" from public blockchain data"+(d.live?"":". SAMPLE DATA, not a real case."),8.5,0,12);
 para("Summary",12,1,2);para(info(d).replace(/<\/strong>/g,"\n").replace(/<\/li>/g,"\n").replace(/<li>/g,"- ").replace(/<[^>]+>/g,"").replace(/^Summary\n/,""),9,0,10);
-para("Flow of funds",12,1,4);need(290);
-var v0=view,sc=Wd/W,P={};view="flow";d.n.forEach(function(n){var p=pos(n);P[n[0]]=[M+p[0]*sc,y+(p[1]-30)*sc]});view=v0;
+para("Flow of funds",12,1,4);need(Math.min(780,(H-60)*Math.min(Wd/W,640/(H-60))+40));
+var v0=view,sc=Math.min(Wd/W,640/(H-60)),P={};view="flow";d.n.forEach(function(n){var p=pos(n);P[n[0]]=[M+p[0]*sc,y+(p[1]-30)*sc]});view=v0;
 d.e.forEach(function(e){var a=P[e[0]],b=P[e[1]],hot=TY[e[0]]=="mixer"||TY[e[1]]=="mixer",c=rgb(hot?CL.mixer:CL.wallet),g=Math.atan2(b[1]-a[1],b[0]-a[0]),tx=b[0]-7*Math.cos(g),ty=b[1]-7*Math.sin(g);
 doc.setDrawColor.apply(doc,c);doc.setFillColor.apply(doc,c);doc.setLineWidth(Math.min(1.5,.5+e[2]/80));doc.line(a[0],a[1],tx,ty);
 doc.triangle(tx,ty,tx-6*Math.cos(g-.4),ty-6*Math.sin(g-.4),tx-6*Math.cos(g+.4),ty-6*Math.sin(g+.4),"F");
 doc.setFontSize(6.5);doc.setFont("helvetica","normal");doc.setTextColor(86,103,116);var nx=-Math.sin(g),ny=Math.cos(g);if(ny>0||(ny==0&&nx<0)){nx=-nx;ny=-ny}doc.text(e[2]+" "+(e[4]||d.ch),(a[0]+b[0])/2+nx*7,(a[1]+b[1])/2+ny*7+2,{align:Math.abs(nx)>.6?(nx>0?"left":"right"):"center"})});
 d.n.forEach(function(n){var p=P[n[0]];doc.setFillColor.apply(doc,rgb(CL[n[3]]));doc.circle(p[0],p[1],5,"F");doc.setTextColor(20,33,43);doc.setFont("helvetica","bold");doc.setFontSize(7);doc.text(un(n[1]),p[0],p[1]+14,{align:"center"});doc.setFont("helvetica","normal");doc.setFontSize(5.5);split(String(n[2])).forEach(function(l,i){doc.text(l,p[0],p[1]+21+i*6.5,{align:"center"})})});
-y+=290;
+y+=(H-60)*sc+40;
 para("Transfers, hop by hop",12,1,4);
 d.e.forEach(function(e,i){para((i+1)+". "+A[e[0]]+"\n    to "+A[e[1]]+"\n    "+e[2]+" "+(e[4]||d.ch)+" | "+e[3]+" UTC"+(e[5]?" | tx "+e[5]:"")+(e[6]?" | BRIDGE to another chain":""),8,0,5)});
 y+=6;para("Where the funds ended up",12,1,4);
@@ -191,9 +191,18 @@ para("Limits of this report",12,1,3);
 para("This report follows only the first few payments out of each wallet, up to 3 hops and 16 wallets, and follows bridges between chains only when the free LI.FI service recognises them. Wallet names and labels come from public data and are clues, not proof of who controls a wallet. Wallet locations are not recorded on the blockchain. This is not legal advice.",9,0,0);
 var N=doc.getNumberOfPages();for(var k=1;k<=N;k++){doc.setPage(k);doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(110,110,110);doc.text("Tracewell report - page "+k+" of "+N,M,820)}
 doc.save("tracewell-report.pdf")}
+var Z={x:0,y:0,s:1},DR={on:0,m:0,x:0,y:0};
+function vb(){var v=$("svg");v.setAttribute("viewBox",Z.x+" "+Z.y+" "+W/Z.s+" "+H/Z.s);v.style.touchAction=Z.s>1?"none":"pan-y"}
+function zoomAt(cx,cy,f){var v=$("svg"),m=v.getScreenCTM();if(!m)return;var pt=v.createSVGPoint();pt.x=cx;pt.y=cy;var p=pt.matrixTransform(m.inverse()),s2=Math.min(8,Math.max(.4,Z.s*f)),k=Z.s/s2;Z.x=p.x-(p.x-Z.x)*k;Z.y=p.y-(p.y-Z.y)*k;Z.s=s2;vb()}
+function zc(f){var r=$("svg").getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,f)}
+$("zi").onclick=function(){zc(1.3)};$("zo").onclick=function(){zc(1/1.3)};$("zf").onclick=function(){Z={x:0,y:0,s:1};vb()};
+$("svg").addEventListener("wheel",function(ev){if(!(ev.ctrlKey||ev.metaKey))return;ev.preventDefault();zoomAt(ev.clientX,ev.clientY,ev.deltaY<0?1.15:1/1.15)},{passive:false});
+$("svg").addEventListener("pointerdown",function(ev){DR.on=1;DR.m=0;DR.x=ev.clientX;DR.y=ev.clientY});
+$("svg").addEventListener("pointermove",function(ev){if(!DR.on)return;var dx=ev.clientX-DR.x,dy=ev.clientY-DR.y;if(!DR.m&&Math.abs(dx)+Math.abs(dy)<5)return;if(!DR.m){try{$("svg").setPointerCapture(ev.pointerId)}catch(x){}}DR.m=1;var c=$("svg").getScreenCTM();Z.x-=dx/c.a;Z.y-=dy/c.d;DR.x=ev.clientX;DR.y=ev.clientY;vb()});
+["pointerup","pointercancel"].forEach(function(t){$("svg").addEventListener(t,function(){DR.on=0;setTimeout(function(){DR.m=0},0)})});
 function split(s){var h=Math.ceil(s.length/2);return s.length>26?[s.slice(0,h),s.slice(h)]:[s]}
 function sub(p,L){return L.map(function(t,i){return'<text class="sub" text-anchor="middle" x="'+p[0]+'" y="'+(p[1]+45+i*12)+'">'+t+'</text>'}).join("")}
-function render(){var d=T[cur],P={},o="";ML=Math.max(3,Math.max.apply(0,d.n.map(function(n){return n[4]})));W=ML>3?1400:900;$("svg").setAttribute("viewBox","0 0 "+W+" "+H);$("svg").style.minWidth=(ML>3?1100:760)+"px";d.n.forEach(function(n){P[n[0]]=pos(n)});
+function render(){var d=T[cur],P={},o="";ML=Math.max(3,Math.max.apply(0,d.n.map(function(n){return n[4]})));var cn={};d.n.forEach(function(n){cn[n[4]]=(cn[n[4]]||0)+1});W=Math.max(900,180+ML*240);H=Math.max(480,140+(Math.max.apply(0,Object.keys(cn).map(function(k){return cn[k]}))-1)*95);Z={x:0,y:0,s:1};vb();$("svg").style.minWidth="760px";d.n.forEach(function(n){P[n[0]]=pos(n)});
 o+='<defs><marker id="ar" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--slate)"/></marker><marker id="arh" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--flag)"/></marker></defs>';
 if(view=="map"){for(var x=40;x<=W-40;x+=(W-80)/12)o+='<line x1="'+x+'" x2="'+x+'" y1="30" y2="'+(H-20)+'" stroke="var(--grid)"/>';for(var y=40;y<=H-40;y+=(H-80)/6)o+='<line y1="'+y+'" y2="'+y+'" x1="40" x2="'+(W-40)+'" stroke="var(--grid)"/>';o+='<text class="sub" x="40" y="22">Estimated wallet locations (latitude/longitude grid)</text>'}
 d.e.forEach(function(e,i){var a=P[e[0]],b=P[e[1]],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2-(view=="map"?30:0),to=d.n.filter(function(n){return n[0]==e[1]})[0],hot=to[3]=="mixer"||d.n.filter(function(n){return n[0]==e[0]})[0][3]=="mixer";
@@ -205,7 +214,7 @@ var nm={};d.n.forEach(function(n){nm[n[0]]=n[1]+" "+n[2]});
 $("tb").innerHTML=d.e.map(function(e,i){var f=d.n.filter(function(n){return n[0]==e[1]})[0][3]=="mixer";return'<tr><td>'+(i+1)+'</td><td>'+nm[e[0]]+'</td><td'+(f?' class="f"':'')+'>'+nm[e[1]]+'</td><td>'+e[2]+' '+(e[4]||d.ch)+(e[6]?' (bridge)':'')+'</td><td>'+(e[5]?'<a href="'+txu(d,e[5],e[7])+'" target="_blank" rel="noopener">'+e[3]+'</a>':e[3])+'</td></tr>'}).join("")}
 function show(i){var n=T[cur].n[i],t={origin:"Origin of the traced funds",wallet:"Intermediary wallet that passed funds on",mixer:"Flagged: funds were mixed here, which hides the link between sender and receiver",exchange:"Known exchange deposit wallet: a request to this exchange may identify the account holder",final:"Final destination: unhosted wallet where the traced funds currently sit"};
 $("det").innerHTML="<strong>"+n[1]+"</strong> "+n[2]+" · "+n[8]+"<br>"+t[n[3]]+(n[10]?"<br>Exchange company: <strong>"+n[10]+"</strong>"+(n[11]?" (label: "+esc(n[11])+")":""):"")}
-$("svg").addEventListener("click",function(ev){var g=ev.target.closest(".node");if(g)show(+g.dataset.i)});
+$("svg").addEventListener("click",function(ev){if(DR.m)return;var g=ev.target.closest(".node");if(g)show(+g.dataset.i)});
 $("svg").addEventListener("keydown",function(ev){if(ev.key=="Enter"){var g=ev.target.closest(".node");if(g)show(+g.dataset.i)}});
 document.querySelectorAll(".chips button").forEach(function(b){b.onclick=function(){cur=+b.dataset.s;$("q").value=T[cur].hash+"…";$("msg").textContent="Showing sample trace.";$("det").textContent="Select a node to see its details.";render()}});
 document.querySelectorAll(".seg button").forEach(function(b){b.onclick=function(){view=b.dataset.v;if(view=="map"&&T[cur].live){view="flow";$("det").textContent="Wallet locations aren’t recorded on the blockchain, so the map is only available for the sample traces.";return}document.querySelectorAll(".seg button").forEach(function(x){x.classList.toggle("on",x==b)});render()}});
